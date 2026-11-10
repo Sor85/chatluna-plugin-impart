@@ -18,5 +18,5 @@ export function apply(ctx: Context, config: Config) {
   ctx.effect(() => () => lifetime.abort())
   const game = new Game(ctx.database, config)
   registerCommands(ctx, game, lifetime.signal, () => ctx.get('chatluna_webui')?.refresh('impart.stats'))
-  if (config.dashboard) ctx.inject(['chatluna_webui'], (ctx) => registerWebUI(ctx, game))
+  ctx.inject(['chatluna_webui'], (ctx) => registerWebUI(ctx, game, config.dashboard))
 }

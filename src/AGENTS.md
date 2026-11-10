@@ -3,9 +3,10 @@
 适用范围：`src/`。同时遵守根 `AGENTS.md`；界面见 `client/AGENTS.md`，测试见 `tests/AGENTS.md`。
 
 - 配置只使用 `@chatluna/schema`；命令复用宿主平台桥，消息使用 Satori `h`，禁止另建 Koishi 应用。
+- 成功率区间 `rates` 保持 `{ min, max, rate }` 对象数组，数组标记 `impart:rates` 角色，由 `client/rate-table.tsx` 渲染为表格（宿主 schema-form 未实现 `array.role('table')`）；子字段 `label` 即列头，`default` 只作新增行初值，仍保持必填。
 - 数据表使用 `impart_` 前缀。长度存为整数百分之一厘米，允许负数，挖矿是打胶的反向操作，不产生货币。
 - 群开关、用户初始化、冷却检查与数值变动在真实数据库事务中完成；玩家按平台隔离，同平台长度和冷却跨群共享。初始化及成功或失败的有效操作均消耗冷却，被拒绝的操作不消耗冷却。
 - 身份只来自当前平台会话，目标用户必须是当前平台有效用户，拒绝全体提及与跨平台标识；不得以传入文本覆盖操作者权限。
 - 图片用 Takumi 节点树与固定打包中文字体，不执行 HTML，不下载用户头像，不提供字体路径配置；失败明确记录并回退文本。
-- WebUI 只提供只读 `impart.stats` state，`Config.dashboard` 关闭时不注册；不提供群开关、删除、重开、货币或直接改长度接口。
+- WebUI 客户端入口始终注册（设置页表格需要），只读 `impart.stats` state 仅在 `Config.dashboard` 开启时注册（`src/webui.ts`）；不提供群开关、删除、重开、货币或直接改长度接口。
 - 所有注册绑定当前 fiber；WebUI 可选注入。卸载不删除用户历史，重载不能重置冷却和分群开关。

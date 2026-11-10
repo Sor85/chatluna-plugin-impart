@@ -37,10 +37,10 @@ export const Config: Schema<Config> = Schema.intersect([
   }).description('数值规则'),
   Schema.object({
     rates: Schema.array(Schema.object({
-      min: Schema.number().min(-1e12).max(1e12).required().label('区间下限（含）'),
-      max: Schema.number().min(-1e12).max(1e12).required().label('区间上限（不含）'),
-      rate: Schema.number().min(0).max(100).required().label('成功率（%）')
-    })).default([
+      min: Schema.number().min(-1e12).max(1e12).default(0).required().label('下限（含，厘米）'),
+      max: Schema.number().min(-1e12).max(1e12).default(100).required().label('上限（不含，厘米）'),
+      rate: Schema.number().min(0).max(100).default(50).required().label('成功率（%）')
+    })).role('impart:rates').default([
       { min: -1e12, max: 0, rate: 100 },
       { min: 0, max: 100, rate: 80 },
       { min: 100, max: 300, rate: 70 },

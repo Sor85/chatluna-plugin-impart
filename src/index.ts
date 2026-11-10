@@ -17,10 +17,6 @@ export function apply(ctx: Context, config: Config) {
   const lifetime = new AbortController()
   ctx.effect(() => () => lifetime.abort())
   const game = new Game(ctx.database, config)
-  registerCommands(ctx, game, lifetime.signal, () => {
-    const webui = ctx.get('chatluna_webui')
-    webui?.refresh('impart.groups')
-    webui?.refresh('impart.ranking')
-  })
-  ctx.inject(['chatluna_webui'], (ctx) => registerWebUI(ctx, game))
+  registerCommands(ctx, game, lifetime.signal, () => ctx.get('chatluna_webui')?.refresh('impart.stats'))
+  if (config.dashboard) ctx.inject(['chatluna_webui'], (ctx) => registerWebUI(ctx, game))
 }

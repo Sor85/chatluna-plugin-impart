@@ -19,6 +19,7 @@ export interface Config {
   imageMode: boolean
   rankingLimit: number
   allChannels: boolean
+  dashboard: boolean
 }
 
 export const Config: Schema<Config> = Schema.intersect([
@@ -56,5 +57,8 @@ export const Config: Schema<Config> = Schema.intersect([
     imageMode: Schema.boolean().default(true).label('图片排行榜').description('使用 Takumi 与内置中文字体生成 PNG，渲染失败回退文字。'),
     rankingLimit: Schema.number().min(1).max(50).step(1).default(15).label('排行榜人数'),
     allChannels: Schema.boolean().default(false).label('跨群排行榜').description('开启后展示当前平台全部玩家；关闭时仅展示在本群参与过的玩家，不代表实时群成员名单。')
-  }).description('排行榜')
+  }).description('排行榜'),
+  Schema.object({
+    dashboard: Schema.boolean().default(true).label('仪表盘统计').description('在 WebUI 仪表盘显示玩家数、群组开关状态及打胶榜首与挖矿榜首。')
+  }).description('WebUI')
 ])

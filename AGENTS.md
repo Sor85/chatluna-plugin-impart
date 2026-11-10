@@ -21,6 +21,6 @@ ChatLuna V2 群聊数值游戏插件。独立源码是唯一编辑入口，`exte
 ## 子目录说明
 
 - `src/AGENTS.md`：配置、游戏事务、命令权限、Takumi 渲染与 WebUI 数据边界。
-- `client/AGENTS.md`：ui-kit 页面、语言资源、滚动区域及生命周期。
+- `client/AGENTS.md`：仪表盘统计卡片、语言资源及生命周期。
 - `scripts/AGENTS.md`：单向同步与 onebot-sandbox 验收安全。
 - `tests/AGENTS.md`：业务、数据库、渲染与说明登记守卫测试。

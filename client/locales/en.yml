@@ -1,28 +1,5 @@
 title: Party
-description: Player rankings and per-group controls for training and mining. Length and cooldowns are shared across groups on the same platform.
-group: Group
-ranking: Ranking order
-lengthRanking: Length
-miningRanking: Mining
-enabled: Open
-disabled: Closed
-start: Start party
-end: End party
-saving: Saving
-error: Data could not be loaded
-truncated: Only the first 200 groups are shown.
-global: All players on this platform
-local: Historical participants in this group
-rank: Rank
-player: Player
-length: Length
-factor: Growth factor
-empty.title: No groups yet
-empty.hint: A group appears after its first training, mining, profile or party command.
-players.empty: No players yet
-players.hint: The first training or mining command initializes the length and growth factor without applying a change.
-paused.title: This group is paused
-paused.hint: Training, mining, profile and ranking commands are paused. Existing data is preserved and remains visible on this management page.
-miningHint: Mining ranks signed lengths in ascending order. Smaller values rank higher; negative values represent digging below zero.
-lengthHint: Length ranks signed values in descending order. Larger values rank higher.
-rules: Training adds length on success and subtracts it on failure; mining does the reverse. Both share a cooldown, including both participants when helping another player. Party controls do not reset lengths or cooldowns.
+summary: '{players} players · {open}/{groups} groups active'
+longest: Top training
+deepest: Top mining
+empty: No player records

@@ -129,18 +129,9 @@ try {
     assert.equal(body(reply), '', `已移除指令仍在回复：${removed}`)
   }
   passed('已移除指令全部不再响应')
-  const groupId = JSON.stringify(['onebot', group])
-  const closed = await action('impart.party', { groupId, enabled: false })
-  assert.equal(closed.enabled, false)
-  has(await send('看看牛牛'), /游戏功能已暂停/)
-  await action('impart.party', { groupId, enabled: true })
-  has(await send('看看牛牛'), /生长系数/)
-  passed('ui-kit 管理页后端开关与聊天状态一致')
-  const unauth = await fetch(`${host}/api/action/impart.party`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ groupId, enabled: false }) })
-  assert.equal(unauth.status, 401)
-  passed('WebUI 未鉴权请求被拒绝')
-  await action('impart.party', { groupId: JSON.stringify(['onebot', secondGroup]), enabled: false })
-  passed('保留可预览的暂停与空列表测试群')
+  const removedAction = await fetch(`${host}/api/action/impart.party`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({}) })
+  assert.notEqual(removedAction.status, 200)
+  passed('WebUI 不再提供群开关写接口', `HTTP ${removedAction.status}`)
   success = true
 } catch (error) {
   checks.push({ name: '执行中断', passed: false, detail: error.message })

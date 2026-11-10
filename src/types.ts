@@ -53,42 +53,23 @@ export interface Ranking {
   players: Player[]
 }
 
-export interface Overview {
-  groups: Group[]
-  truncated: boolean
-}
-
-export interface RankingRequest {
-  groupId: string
-  order: RankingOrder
-}
-
-export interface PartyRequest {
-  groupId: string
-  enabled: boolean
-}
-
-export interface PlayerView {
-  id: string
+export interface Leader {
+  platform: string
   userId: string
   name: string
   length: number
-  growthFactor: number
 }
 
-export interface RankingView {
-  group: Group
-  order: RankingOrder
-  allChannels: boolean
-  players: PlayerView[]
+export interface Stats {
+  players: number
+  groups: number
+  openGroups: number
+  longest?: Leader
+  deepest?: Leader
 }
 
 declare module '@chatluna/ui-client/client' {
   interface States {
-    'impart.groups': Overview
-    'impart.ranking': RankingView | undefined
-  }
-  interface Actions {
-    'impart.party'(input: PartyRequest): Group
+    'impart.stats': Stats
   }
 }

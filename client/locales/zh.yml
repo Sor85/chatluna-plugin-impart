@@ -1,28 +1,5 @@
 title: 银趴
-description: 打胶与挖矿的玩家排行和分群开关。长度及冷却在同一平台跨群共享。
-group: 群组
-ranking: 排行方式
-lengthRanking: 长度榜
-miningRanking: 挖矿榜
-enabled: 已开始
-disabled: 已结束
-start: 开始银趴
-end: 结束银趴
-saving: 保存中
-error: 数据加载失败
-truncated: 当前仅显示前 200 个群组。
-global: 当前平台全部玩家
-local: 本群历史参与玩家
-rank: 名次
-player: 玩家
-length: 长度
-factor: 生长系数
-empty.title: 暂无群记录
-empty.hint: 群内首次使用打胶、挖矿、查询或银趴开关后，显示该群的数据。
-players.empty: 暂无玩家记录
-players.hint: 群内首次使用打胶或挖矿时，仅初始化长度和生长系数。
-paused.title: 本群游戏已暂停
-paused.hint: 聊天指令中的打胶、挖矿、查询和排行已暂停；已有数据保留，管理页面仍可查看。
-miningHint: 挖矿榜按有符号长度升序排列，数值越小排名越高；负数表示向下挖掘。
-lengthHint: 长度榜按有符号长度降序排列，数值越大排名越高。
-rules: 打胶成功增长、失败缩短；挖矿成功缩短、失败增长。两者共用冷却，帮助他人时双方均消耗冷却。群开关不重置长度或冷却。
+summary: '{players} 名玩家 · {open}/{groups} 个群进行中'
+longest: 打胶榜首
+deepest: 挖矿榜首
+empty: 暂无玩家记录

@@ -35,7 +35,7 @@ async function initialize() {
 
 describe('真实 SQLite 游戏事务', () => {
   it('默认配置保留原始数值规则', () => {
-    expect(config).toMatchObject({ initialLength: 18, initialVariance: 45, growth: 10, setback: 12, cooldownSeconds: 5, rankingLimit: 15 })
+    expect(config).toMatchObject({ initialLength: 18, initialVariance: 45, growth: 10, setback: 12, cooldownSeconds: 5, rankingLimit: 15, dashboard: true })
     expect(() => Config({ ...config, cooldownSeconds: -1 })).toThrow()
     expect(() => Config({ ...config, rankingLimit: 100 })).toThrow()
     expect(() => new Game(ctx.database, { ...config, rates: [{ min: 3, max: 2, rate: 80 }] })).toThrow('下限')
@@ -128,8 +128,7 @@ describe('真实 SQLite 游戏事务', () => {
     expect(await game.profile(actor, actor.userId)).toEqual({ kind: 'closed' })
     expect(await game.ranking(actor, 'length')).toBeUndefined()
     expect(await game.profile({ ...actor, channelId: 'group-b' }, actor.userId)).toMatchObject({ player: { length: 1800 } })
-    const groupId = JSON.stringify([actor.platform, actor.channelId])
-    expect(await game.rankingView(groupId, 'length')).toMatchObject({ players: [{ length: 1800 }] })
+    expect(await game.stats()).toMatchObject({ players: 1, groups: 2, openGroups: 1 })
     await game.party(actor, true)
     await game.party(actor, true)
     expect(await game.profile(actor, actor.userId)).toMatchObject({ player: { length: 1800, lastActionAt: 100_000 } })
@@ -151,6 +150,11 @@ describe('真实 SQLite 游戏事务', () => {
     expect((await game.ranking(actor, 'length'))?.players.map((player) => player.userId)).toEqual(['alice', 'bob'])
     expect((await game.ranking(actor, 'mining'))?.players.map((player) => player.userId)).toEqual(['bob', 'alice'])
     expect((await game.ranking({ ...actor, channelId: 'empty' }, 'length'))?.players).toEqual([])
+    expect(await game.stats()).toMatchObject({
+      players: 3,
+      longest: { platform: 'onebot', userId: 'alice', length: 1800 },
+      deepest: { userId: 'bob', length: -2500 }
+    })
   })
 
   it('全平台榜遵守平台隔离及人数限制，不绕过当前群关闭', async () => {

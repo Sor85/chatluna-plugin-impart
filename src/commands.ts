@@ -53,7 +53,7 @@ export function registerCommands(ctx: Context, game: Game, signal: AbortSignal, 
     refresh()
     if (result.kind === 'closed') return closed
     if (result.kind === 'cooldown') return h.escape(`${result.userId === actor.userId ? '当前用户' : '目标用户'}仍在冷却，剩余 ${result.seconds} 秒。`)
-    if (result.kind === 'initialized') return h.escape(`${result.player.name} 已初始化，长度 ${formatLength(result.player.length)} cm，生长系数 ${result.player.growthFactor.toFixed(2)}。本次未执行${mode === 'train' ? '打胶' : '挖矿'}。`)
+    if (result.kind === 'initialized') return h.escape(`${result.player.name} 已初始化，长度 ${formatLength(result.player.length)} cm，生长系数 ${result.player.growthFactor.toFixed(2)}。`)
     const label = mode === 'train' ? '打胶' : '挖矿'
     return h.escape(`${result.player.name} ${label}${result.success ? '成功' : '失败'}，长度 ${result.delta > 0 ? '+' : ''}${formatLength(result.delta)} cm，当前 ${formatLength(result.player.length)} cm。`)
   })

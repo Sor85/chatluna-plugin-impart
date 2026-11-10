@@ -1,6 +1,7 @@
+import { $ } from '@cordisjs/plugin-database'
 import type { Database } from '@cordisjs/plugin-database'
 import type { Config } from './config'
-import type { Actor, Group, Mode, PlayResult, Player, Ranking, RankingOrder, Target } from './types'
+import type { Actor, Group, Leader, Mode, PlayResult, Player, Ranking, RankingOrder, Stats, Target } from './types'
 import { change, displayName, varied } from './utils'
 import type {} from './models'
 
@@ -100,20 +101,6 @@ export class Game {
     })
   }
 
-  setParty(groupId: string, enabled: boolean): Promise<Group> {
-    return this.transact(async (tx) => {
-      const [group] = await tx.get('impart_groups', { id: groupId })
-      if (!group) throw new Error('群记录不存在。')
-      await tx.set('impart_groups', { id: groupId }, { enabled })
-      return { ...group, enabled }
-    })
-  }
-
-  async groups() {
-    const groups = await this.database.get('impart_groups', {}, { sort: { id: 'asc' }, limit: 201 })
-    return { groups: groups.slice(0, 200), truncated: groups.length > 200 }
-  }
-
   private async ranked(tx: Database, group: Group, order: RankingOrder): Promise<Ranking> {
     const members = this.config.allChannels ? undefined : await tx.get('impart_memberships', { groupId: group.id }, ['playerId'])
     const players = await tx.get('impart_players', {
@@ -131,11 +118,18 @@ export class Game {
     })
   }
 
-  rankingView(groupId: string, order: RankingOrder) {
-    return this.transact(async (tx) => {
-      const [group] = await tx.get('impart_groups', { id: groupId })
-      if (!group) return undefined
-      return this.ranked(tx, group, order)
-    })
+  async stats(): Promise<Stats> {
+    const leader = async (sort: 'asc' | 'desc'): Promise<Leader | undefined> => {
+      const [player] = await this.database.get('impart_players', {}, { sort: { length: sort, id: 'asc' }, limit: 1 })
+      return player && { platform: player.platform, userId: player.userId, name: player.name, length: player.length }
+    }
+    const [players, groups, openGroups, longest, deepest] = await Promise.all([
+      this.database.select('impart_players').execute((row) => $.count(row.id)),
+      this.database.select('impart_groups').execute((row) => $.count(row.id)),
+      this.database.select('impart_groups', { enabled: true }).execute((row) => $.count(row.id)),
+      leader('desc'),
+      leader('asc')
+    ])
+    return { players, groups, openGroups, longest, deepest }
   }
 }

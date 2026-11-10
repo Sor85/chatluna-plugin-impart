@@ -29,9 +29,9 @@ it('无已移除命令、货币依赖、自定义字体入口或鼠标指针覆�
   const manifest = readFileSync(join(root, 'package.json'), 'utf8')
   for (const removed of ['puppeteer', 'monetary', 'glyph']) expect(manifest).not.toContain(removed)
   expect(readFileSync(join(root, 'src/config.ts'), 'utf8')).not.toContain('fontPath')
-  const page = readFileSync(join(root, 'client/page.tsx'), 'utf8')
-  expect(page).not.toMatch(/cursor[:\s-]/)
-  expect(page).toContain('text-sm leading-6')
+  const card = readFileSync(join(root, 'client/dashboard.tsx'), 'utf8')
+  expect(card).not.toMatch(/cursor[:\s-]/)
+  expect(card).toContain('text-sm leading-6')
 })
 
 it('客户端源入口依赖的共享源码随包分发', () => {

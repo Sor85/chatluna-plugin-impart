@@ -53,19 +53,29 @@ export interface Ranking {
   players: Player[]
 }
 
-export interface Leader {
-  platform: string
+export interface Entry {
+  rank: number
   userId: string
   name: string
   length: number
+}
+
+export interface GroupStats {
+  id: string
+  platform: string
+  channelId: string
+  name: string
+  enabled: boolean
+  players: number
+  entries: Entry[]
 }
 
 export interface Stats {
   players: number
   groups: number
   openGroups: number
-  longest?: Leader
-  deepest?: Leader
+  ranked: GroupStats[]
+  hidden: number
 }
 
 declare module '@chatluna/ui-client/client' {

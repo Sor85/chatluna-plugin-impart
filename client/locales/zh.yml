@@ -1,5 +1,11 @@
 title: 银趴
-summary: '{players} 名玩家 · {open}/{groups} 个群进行中'
-longest: 打胶榜首
-deepest: 挖矿榜首
+description: 各群按长度排列，显示最长与最短各 5 名；长度及冷却在同一平台跨群共享。
+players: 玩家
+groups: 群组
+openGroups: 进行中
+enabled: 进行中
+disabled: 已暂停
+groupPlayers: '{count} 名玩家'
+omitted: '中间省略 {count} 名'
+hidden: '另有 {count} 个群未显示，按参与人数显示前 6 个群。'
 empty: 暂无玩家记录

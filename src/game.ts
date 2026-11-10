@@ -1,9 +1,12 @@
 import { $ } from '@cordisjs/plugin-database'
 import type { Database } from '@cordisjs/plugin-database'
 import type { Config } from './config'
-import type { Actor, Group, Leader, Mode, PlayResult, Player, Ranking, RankingOrder, Stats, Target } from './types'
+import type { Actor, Group, GroupStats, Mode, PlayResult, Player, Ranking, RankingOrder, Stats, Target } from './types'
 import { change, displayName, varied } from './utils'
 import type {} from './models'
+
+const DASHBOARD_GROUPS = 6
+const DASHBOARD_PLAYERS = 5
 
 export class Game {
   private pending = Promise.resolve()
@@ -119,17 +122,31 @@ export class Game {
   }
 
   async stats(): Promise<Stats> {
-    const leader = async (sort: 'asc' | 'desc'): Promise<Leader | undefined> => {
-      const [player] = await this.database.get('impart_players', {}, { sort: { length: sort, id: 'asc' }, limit: 1 })
-      return player && { platform: player.platform, userId: player.userId, name: player.name, length: player.length }
-    }
-    const [players, groups, openGroups, longest, deepest] = await Promise.all([
+    const [players, groups, counts] = await Promise.all([
       this.database.select('impart_players').execute((row) => $.count(row.id)),
-      this.database.select('impart_groups').execute((row) => $.count(row.id)),
-      this.database.select('impart_groups', { enabled: true }).execute((row) => $.count(row.id)),
-      leader('desc'),
-      leader('asc')
+      this.database.get('impart_groups', {}),
+      this.database.select('impart_memberships').groupBy(['groupId'], { count: (row) => $.count(row.id) }).execute()
     ])
-    return { players, groups, openGroups, longest, deepest }
+    const sizes = new Map(counts.map((row) => [row.groupId, row.count]))
+    const active = groups
+      .filter((group) => sizes.has(group.id))
+      .sort((a, b) => sizes.get(b.id)! - sizes.get(a.id)! || a.id.localeCompare(b.id))
+    const shown = active.slice(0, DASHBOARD_GROUPS)
+    const ranked = await Promise.all(shown.map(async (group): Promise<GroupStats> => {
+      const members = await this.database.get('impart_memberships', { groupId: group.id }, ['playerId'])
+      const count = sizes.get(group.id)!
+      const query = { id: members.map((member) => member.playerId) }
+      const [longest, shortest] = await Promise.all([
+        this.database.get('impart_players', query, { sort: { length: 'desc', id: 'asc' }, limit: DASHBOARD_PLAYERS }),
+        this.database.get('impart_players', query, { sort: { length: 'asc', id: 'desc' }, limit: DASHBOARD_PLAYERS })
+      ])
+      const entries = [
+        ...longest.map((player, index) => ({ player, rank: index + 1 })),
+        ...shortest.reverse().map((player, index) => ({ player, rank: count - shortest.length + index + 1 }))
+      ].filter(({ rank }, index, all) => all.findIndex((other) => other.rank === rank) === index)
+        .map(({ player: { userId, name, length }, rank }) => ({ rank, userId, name, length }))
+      return { ...group, players: count, entries }
+    }))
+    return { players, groups: groups.length, openGroups: groups.filter((group) => group.enabled).length, ranked, hidden: active.length - shown.length }
   }
 }

@@ -17,20 +17,29 @@ it('真实 ui-kit 渲染空态，卡片有独立排版基线', () => {
   const html = renderToStaticMarkup(createElement(ImpartStatsCard))
   expect(html).toContain('empty')
   expect(html).toContain('text-sm leading-6')
-  expect(html).toContain('players,0')
+  expect(html).toContain('tabular-nums">0</dd>')
 })
 
-it('显示统计、有符号长度并转义昵称', () => {
+it('按群列出名次、省略中间名次、有符号长度、暂停状态和未显示群数，并转义昵称', () => {
   const stats: Stats = {
-    players: 2, groups: 3, openGroups: 2,
-    longest: { platform: 'onebot', userId: '1', name: '甲', length: 3281 },
-    deepest: { platform: 'onebot', userId: '2', name: '<script>alert(1)</script>', length: -2100 }
+    players: 12, groups: 3, openGroups: 2, hidden: 1,
+    ranked: [{
+      id: 'g', platform: 'onebot', channelId: '30001', name: '测试群', enabled: false, players: 12,
+      entries: [
+        { rank: 1, userId: '1', name: '甲', length: 3281 },
+        { rank: 12, userId: '2', name: '<script>alert(1)</script>', length: -2100 }
+      ]
+    }]
   }
   mocks.live.mockReturnValue({ status: 'ready', data: stats })
   const html = renderToStaticMarkup(createElement(ImpartStatsCard))
-  expect(html).toContain('summary|players,2|open,2|groups,3')
+  expect(html).toContain('onebot · 30001 · groupPlayers|count,12')
+  expect(html).toContain('disabled')
+  expect(html).toContain('omitted|count,10')
   expect(html).toContain('32.81 cm')
   expect(html).toContain('-21.00 cm')
+  expect(html).toContain('right:50%;width:32.00')
+  expect(html).toContain('hidden|count,1')
   expect(html).toContain('&lt;script&gt;')
   expect(html).not.toContain('<script>alert')
 })

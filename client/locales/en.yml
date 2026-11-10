@@ -1,5 +1,11 @@
 title: Party
-summary: '{players} players · {open}/{groups} groups active'
-longest: Top training
-deepest: Top mining
+description: Each group is ordered by length, showing the 5 longest and 5 shortest players. Length and cooldowns are shared across groups on the same platform.
+players: Players
+groups: Groups
+openGroups: Active
+enabled: Active
+disabled: Paused
+groupPlayers: '{count} players'
+omitted: '{count} players omitted'
+hidden: '{count} more groups not shown; the 6 groups with the most players are listed.'
 empty: No player records

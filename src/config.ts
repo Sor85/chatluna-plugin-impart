@@ -59,6 +59,6 @@ export const Config: Schema<Config> = Schema.intersect([
     allChannels: Schema.boolean().default(false).label('跨群排行榜').description('开启后展示当前平台全部玩家；关闭时仅展示在本群参与过的玩家，不代表实时群成员名单。')
   }).description('排行榜'),
   Schema.object({
-    dashboard: Schema.boolean().default(true).label('仪表盘统计').description('在 WebUI 仪表盘显示玩家数、群组开关状态及打胶榜首与挖矿榜首。')
+    dashboard: Schema.boolean().default(true).label('仪表盘统计').description('在 WebUI 仪表盘按群显示最长与最短各 5 名，以及玩家数和群组开关状态。')
   }).description('WebUI')
 ])

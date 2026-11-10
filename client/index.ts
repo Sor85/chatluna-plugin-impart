@@ -7,7 +7,7 @@ export default function apply(ctx: Context) {
   ctx.locale.register('impart', { zh, en })
   ctx.slots.register(
     'dashboard.card',
-    { id: 'impart.stats', order: 70, size: 'md' },
+    { id: 'impart.stats', order: 70, size: 'lg' },
     lazyPage(async () => (await import('./dashboard')).ImpartStatsCard).component
   )
 }

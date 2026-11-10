@@ -8,8 +8,8 @@ The user asked to remove the sidebar "Party" page (`/impart`), inject the plugin
 
 ## Decision
 
-- The client registers only an `impart.stats` card (`md`, order 70) in the `dashboard.card` slot declared by the core SlotMap, matching the usage and schedule cards; the registration is disposed with the plugin fiber.
-- The server exposes only the read-only `impart.stats` state: player count, total and active group counts, and the training and mining leaders (signed length, ties broken by id).
+- The client registers only an `impart.stats` card (`lg`, full row, order 70) in the `dashboard.card` slot declared by the core SlotMap, matching the usage and schedule cards; the registration is disposed with the plugin fiber.
+- The server exposes only the read-only `impart.stats` state: player count, total and active group counts, and the 5 longest and 5 shortest players by length (contiguous ranks, everyone when fewer than 10, the middle reported as an omitted count) for each of the 6 groups with the most historical participants (signed length, ties broken by id). The limits live in `src/game.ts` to bound each state push; groups beyond them are reported only as a count.
 - `Config.dashboard` defaults to `true`; when disabled `src/index.ts` skips the WebUI injection, so neither the client entry nor the state is registered.
 - The page-only `impart.groups` and `impart.ranking` states and the `impart.party` action are removed. Group switches stay in chat commands, leaving no separately authorized write endpoint.
 

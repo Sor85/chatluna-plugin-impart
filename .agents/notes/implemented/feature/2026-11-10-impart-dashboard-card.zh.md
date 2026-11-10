@@ -8,8 +8,8 @@ Status: implemented
 
 ## Decision
 
-- 客户端只向宿主核心 SlotMap 声明的 `dashboard.card` 插槽注册 `impart.stats` 卡片（`md`，order 70），与用量、定时任务插件的卡片注册方式一致；插槽注册随插件 fiber 自动卸载。
-- 服务端只提供只读 `impart.stats` state：玩家数、全部与进行中群数、打胶榜首与挖矿榜首（有符号长度，同值按 id 稳定）。
+- 客户端只向宿主核心 SlotMap 声明的 `dashboard.card` 插槽注册 `impart.stats` 卡片（`lg` 整行，order 70），与用量、定时任务插件的卡片注册方式一致；插槽注册随插件 fiber 自动卸载。
+- 服务端只提供只读 `impart.stats` state：玩家数、全部与进行中群数，以及按历史参与人数排序的前 6 个群各自按长度排列的最长与最短各 5 名（名次连续，人数不足 10 时全部列出，中间名次仅给出省略数）（有符号长度，同值按 id 稳定）。数量上限写在 `src/game.ts`，用于限制单次 state 推送体积；超出的群只给出数量。
 - `Config.dashboard` 默认 `true`；关闭时 `src/index.ts` 不注入 WebUI，客户端入口与 state 都不注册。
 - 页面专用的 `impart.groups`、`impart.ranking` state 与 `impart.party` action 一并删除，群开关只通过聊天指令操作，减少需要单独鉴权的写接口。
 

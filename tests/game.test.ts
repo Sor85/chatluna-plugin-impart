@@ -150,11 +150,41 @@ describe('真实 SQLite 游戏事务', () => {
     expect((await game.ranking(actor, 'length'))?.players.map((player) => player.userId)).toEqual(['alice', 'bob'])
     expect((await game.ranking(actor, 'mining'))?.players.map((player) => player.userId)).toEqual(['bob', 'alice'])
     expect((await game.ranking({ ...actor, channelId: 'empty' }, 'length'))?.players).toEqual([])
-    expect(await game.stats()).toMatchObject({
-      players: 3,
-      longest: { platform: 'onebot', userId: 'alice', length: 1800 },
-      deepest: { userId: 'bob', length: -2500 }
-    })
+    const stats = await game.stats()
+    expect(stats).toMatchObject({ players: 3, groups: 3, openGroups: 3, hidden: 0 })
+    expect(stats.ranked.map((group) => [group.channelId, group.players])).toEqual([['group-a', 2], ['group-b', 1]])
+    expect(stats.ranked[0]!.entries).toEqual([
+      { rank: 1, userId: 'alice', name: '甲', length: 1800 },
+      { rank: 2, userId: 'bob', name: '乙', length: -2500 }
+    ])
+  })
+
+  it('仪表盘按参与人数展示前 6 个群，空群不计入', async () => {
+    game = new Game(ctx.database, { ...config, cooldownSeconds: 0 }, random, () => now)
+    for (let index = 0; index < 7; index++) {
+      for (let user = 0; user <= index; user++) {
+        const player = { userId: `u${user}`, name: `玩家${user}` }
+        await game.play({ ...actor, channelId: `g${index}`, ...player }, player, 'train')
+      }
+    }
+    await game.profile({ ...actor, channelId: 'quiet' }, actor.userId)
+    const stats = await game.stats()
+    expect(stats).toMatchObject({ players: 7, groups: 8, hidden: 1 })
+    expect(stats.ranked.map((group) => group.channelId)).toEqual(['g6', 'g5', 'g4', 'g3', 'g2', 'g1'])
+    expect(stats.ranked[0]!.entries.map((entry) => entry.rank)).toEqual([1, 2, 3, 4, 5, 6, 7])
+  })
+
+  it('仪表盘每群只列最长与最短各 5 名，名次连续不重复', async () => {
+    game = new Game(ctx.database, { ...config, cooldownSeconds: 0 }, random, () => now)
+    for (let user = 0; user < 12; user++) {
+      const player = { userId: `u${String(user).padStart(2, '0')}`, name: `玩家${user}` }
+      await game.play({ ...actor, ...player }, player, 'train')
+      await ctx.database.set('impart_players', { userId: player.userId }, { length: 100 * (6 - user) })
+    }
+    const [group] = (await game.stats()).ranked
+    expect(group!.players).toBe(12)
+    expect(group!.entries.map((entry) => entry.rank)).toEqual([1, 2, 3, 4, 5, 8, 9, 10, 11, 12])
+    expect(group!.entries.map((entry) => entry.length)).toEqual([600, 500, 400, 300, 200, -100, -200, -300, -400, -500])
   })
 
   it('全平台榜遵守平台隔离及人数限制，不绕过当前群关闭', async () => {

@@ -10,3 +10,4 @@ coverage/
 .playwright-mcp/
 .test-artifacts/
 tmp/
+.claude/

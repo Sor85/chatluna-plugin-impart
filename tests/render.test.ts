@@ -6,7 +6,7 @@ const ranking: Ranking = {
   group: { id: 'test', platform: 'onebot', channelId: 'test', name: '图片测试群', enabled: true },
   allChannels: false,
   order: 'mining',
-  players: [{ id: 'a', platform: 'onebot', userId: '123', name: '测试玩家 <img src="http://127.0.0.1/secret"/>', length: -2345, growthFactor: 0.5, lastActionAt: 0 }]
+  players: [{ id: 'a', platform: 'onebot', userId: '123', name: '测试玩家 <img src="http://127.0.0.1/secret"/>', length: 100, depth: -2345, growthFactor: 0.5, lastActionAt: 0 }]
 }
 
 it('Takumi 实际输出 PNG，尺寸正确，中文字库离线可用', async () => {
@@ -21,6 +21,7 @@ it('Takumi 实际输出 PNG，尺寸正确，中文字库离线可用', async ()
 it('昵称只进入文本节点，不创建外部资源节点', () => {
   expect(JSON.stringify(rankingNode(ranking))).not.toContain('"type":"image"')
   expect(rankingText(ranking)).toContain('-23.45 cm')
+  expect(rankingText({ ...ranking, order: 'length' })).toContain('1.00 cm')
   expect(rankingText(ranking)).toContain('挖矿排行榜')
 })
 

@@ -2,8 +2,12 @@ import type { Node, Renderer, TextNode } from '@takumi-rs/core'
 import { createRequire } from 'node:module'
 import { readdir, readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import type { Ranking } from './types'
+import type { Player, Ranking } from './types'
 import { formatLength } from './utils'
+
+function measure(ranking: Ranking, player: Player) {
+  return formatLength(ranking.order === 'length' ? player.length! : player.depth!)
+}
 
 function text(value: string, style: TextNode['style'] = {}): TextNode {
   return { type: 'text', text: value, style }
@@ -12,7 +16,7 @@ function text(value: string, style: TextNode['style'] = {}): TextNode {
 export function rankingText(ranking: Ranking) {
   const title = ranking.order === 'length' ? '牛牛排行榜' : '挖矿排行榜'
   const scope = ranking.allChannels ? `${ranking.group.platform} 全平台` : ranking.group.name
-  return `${title} · ${scope}\n${ranking.players.map((player, index) => `${index + 1}. ${player.name}  ${formatLength(player.length)} cm`).join('\n')}`
+  return `${title} · ${scope}\n${ranking.players.map((player, index) => `${index + 1}. ${player.name}  ${measure(ranking, player)} cm`).join('\n')}`
 }
 
 export function rankingNode(ranking: Ranking): Node {
@@ -44,10 +48,10 @@ export function rankingNode(ranking: Ranking): Node {
               text(`@${player.userId.slice(0, 32)}`, { fontSize: 15, color: '#57534e' })
             ]
           },
-          text(`${formatLength(player.length)} cm`, { fontSize: 26, fontWeight: 600, flexShrink: 0 })
+          text(`${measure(ranking, player)} cm`, { fontSize: 26, fontWeight: 600, flexShrink: 0 })
         ]
       })),
-      text(mining ? '长度升序 · 数值越小排名越高 · 负数表示向下挖掘' : '长度降序 · 打胶与挖矿共用冷却 · 长度跨群共享', {
+      text(mining ? '深度升序 · 数值越小挖得越深 · 深度跨群共享' : '长度降序 · 打胶与挖矿共用冷却 · 长度跨群共享', {
         fontSize: 16, color: '#57534e', marginTop: 28
       })
     ]

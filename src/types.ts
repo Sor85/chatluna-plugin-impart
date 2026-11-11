@@ -8,7 +8,8 @@ export interface Player {
   platform: string
   userId: string
   name: string
-  length: number
+  length: number | null
+  depth: number | null
   growthFactor: number
   lastActionAt: number
 }
@@ -42,7 +43,7 @@ export interface Target {
 
 export type PlayResult =
   | { kind: 'closed' }
-  | { kind: 'initialized'; player: Player }
+  | { kind: 'initialized'; player: Player; mode: Mode }
   | { kind: 'cooldown'; userId: string; seconds: number }
   | { kind: 'changed'; player: Player; delta: number; success: boolean; mode: Mode }
 

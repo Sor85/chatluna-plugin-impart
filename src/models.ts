@@ -16,10 +16,11 @@ export function defineModels(ctx: Context) {
     platform: 'string',
     userId: 'string',
     name: 'string',
-    length: 'integer',
+    length: { type: 'integer', nullable: true },
+    depth: { type: 'integer', nullable: true },
     growthFactor: 'double',
     lastActionAt: 'integer'
-  }, { primary: 'id', unique: [['platform', 'userId']], indexes: [['platform', 'length']] })
+  }, { primary: 'id', unique: [['platform', 'userId']], indexes: [['platform', 'length'], ['platform', 'depth']] })
   ctx.model.extend('impart_groups', {
     id: 'string',
     platform: 'string',

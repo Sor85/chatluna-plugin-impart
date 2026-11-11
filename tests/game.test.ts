@@ -35,9 +35,11 @@ async function initialize() {
 
 describe('真实 SQLite 游戏事务', () => {
   it('默认配置保留原始数值规则', () => {
-    expect(config).toMatchObject({ initialLength: 18, initialVariance: 45, growth: 10, setback: 12, cooldownSeconds: 5, rankingLimit: 15, dashboard: true })
+    expect(config).toMatchObject({ initialLengthMin: 0, initialLengthMax: 18, initialDepthMin: -18, initialDepthMax: 0, growth: 10, setback: 12, cooldownSeconds: 5, rankingLimit: 15, dashboard: true })
     expect(() => Config({ ...config, cooldownSeconds: -1 })).toThrow()
     expect(() => Config({ ...config, rankingLimit: 100 })).toThrow()
+    expect(() => new Game(ctx.database, { ...config, initialLengthMin: 20 })).toThrow('初始长度')
+    expect(() => new Game(ctx.database, { ...config, initialDepthMax: -20 })).toThrow('初始深度')
     expect(() => new Game(ctx.database, { ...config, rates: [{ min: 3, max: 2, rate: 80 }] })).toThrow('下限')
   })
 
@@ -45,8 +47,27 @@ describe('真实 SQLite 游戏事务', () => {
     expect(await game.profile(actor, actor.userId)).toMatchObject({ kind: 'profile', player: undefined })
     expect(await ctx.database.get('impart_players', {})).toHaveLength(0)
     const initial = await game.play(actor, actor, 'mine')
-    expect(initial).toMatchObject({ kind: 'initialized', player: { length: 1800, growthFactor: 0.5, lastActionAt: now } })
+    expect(initial).toMatchObject({ kind: 'initialized', mode: 'mine', player: { length: null, depth: -900, growthFactor: 0.5, lastActionAt: now } })
     expect(await game.play(actor, actor, 'train')).toMatchObject({ kind: 'cooldown', seconds: 5 })
+  })
+
+  it('打胶与挖矿分别初始化，初值取各自的下限到上限', async () => {
+    random.mockReturnValueOnce(1)
+    expect(await game.play(actor, actor, 'train')).toMatchObject({ kind: 'initialized', mode: 'train', player: { length: 1800, depth: null } })
+    now += 5000
+    random.mockReturnValueOnce(0)
+    expect(await game.play(actor, actor, 'mine')).toMatchObject({ kind: 'initialized', mode: 'mine', player: { length: 1800, depth: -1800, growthFactor: 0.5 } })
+    now += 5000
+    random.mockReturnValueOnce(0)
+    expect(await game.play(actor, bob, 'train')).toMatchObject({ kind: 'initialized', player: { userId: 'bob', length: 0, depth: null } })
+    expect(await game.profile(actor, actor.userId)).toMatchObject({ player: { length: 1800, depth: -1800, lastActionAt: now - 5000 } })
+    game = new Game(ctx.database, { ...config, initialLengthMin: 5, initialLengthMax: 25, initialDepthMin: -30, initialDepthMax: -10 }, random, () => now)
+    const carol = { userId: 'carol', name: '丙' }
+    random.mockReturnValueOnce(0.25)
+    expect(await game.play({ ...actor, ...carol }, carol, 'train')).toMatchObject({ player: { length: 1000 } })
+    now += 5000
+    random.mockReturnValueOnce(0)
+    expect(await game.play({ ...actor, ...carol }, carol, 'mine')).toMatchObject({ player: { depth: -3000 } })
   })
 
   it('帮助他人时依次初始化目标和发起者', async () => {
@@ -56,34 +77,34 @@ describe('真实 SQLite 游戏事务', () => {
     expect(await game.play(actor, bob, 'train')).toMatchObject({ kind: 'cooldown' })
   })
 
-  it('成功打胶增长，挖矿反向减少并允许负长度', async () => {
+  it('打胶只改长度，挖矿只改深度，已有长度的玩家首次挖矿仍需初始化', async () => {
     await initialize()
-    expect(await game.play(actor, actor, 'train')).toMatchObject({ kind: 'changed', success: true, delta: 1500, player: { length: 3300 } })
+    expect(await game.play(actor, actor, 'train')).toMatchObject({ kind: 'changed', success: true, delta: 1500, player: { length: 2400, depth: null } })
     now += 5000
-    expect(await game.play(actor, actor, 'mine')).toMatchObject({ delta: -1500, player: { length: 1800 } })
+    expect(await game.play(actor, actor, 'mine')).toMatchObject({ kind: 'initialized', player: { length: 2400, depth: -900 } })
     now += 5000
-    await game.play(actor, actor, 'mine')
+    expect(await game.play(actor, actor, 'mine')).toMatchObject({ kind: 'changed', delta: -1500, player: { length: 2400, depth: -2400 } })
     now += 5000
-    expect(await game.play(actor, actor, 'mine')).toMatchObject({ player: { length: -1200 } })
+    expect(await game.play(actor, actor, 'train')).toMatchObject({ player: { length: 3900, depth: -2400 } })
   })
 
   it('失败反向变化且不乘系数，失败也消耗冷却', async () => {
     await initialize()
     random.mockReturnValueOnce(0.99)
-    expect(await game.play(actor, actor, 'train')).toMatchObject({ success: false, delta: -1200, player: { length: 600 } })
+    expect(await game.play(actor, actor, 'train')).toMatchObject({ success: false, delta: -1200, player: { length: -300 } })
     expect(await game.play(actor, actor, 'mine')).toMatchObject({ kind: 'cooldown' })
-    await ctx.database.set('impart_players', {}, { length: -1800 })
+    await ctx.database.set('impart_players', {}, { depth: -1800 })
     now += 5000
     random.mockReturnValueOnce(0.99)
-    expect(await game.play(actor, actor, 'mine')).toMatchObject({ success: false, delta: 1200, player: { length: -600 } })
+    expect(await game.play(actor, actor, 'mine')).toMatchObject({ success: false, delta: 1200, player: { length: -300, depth: -600 } })
   })
 
   it('帮助他人仅改目标长度，但双方共用跨群冷却', async () => {
     await game.play(actor, bob, 'train')
     await game.play(actor, bob, 'train')
     now += 5000
-    expect(await game.play(actor, bob, 'train')).toMatchObject({ player: { userId: 'bob', length: 3300 } })
-    expect(await game.profile(actor, actor.userId)).toMatchObject({ player: { length: 1800, lastActionAt: now } })
+    expect(await game.play(actor, bob, 'train')).toMatchObject({ player: { userId: 'bob', length: 2400 } })
+    expect(await game.profile(actor, actor.userId)).toMatchObject({ player: { length: 900, lastActionAt: now } })
     expect(await game.play({ ...actor, channelId: 'group-b' }, actor, 'mine')).toMatchObject({ kind: 'cooldown' })
     expect(await game.play({ ...actor, ...bob, channelId: 'group-b' }, bob, 'mine')).toMatchObject({ kind: 'cooldown' })
   })
@@ -108,15 +129,15 @@ describe('真实 SQLite 游戏事务', () => {
     game = new Game(ctx.database, { ...config, cooldownSeconds: 0, rates: [{ min: -1e12, max: 1e12, rate: 100 }] }, random, () => now)
     await initialize()
     await Promise.all(Array.from({ length: 20 }, () => game.play(actor, actor, 'train')))
-    expect(await game.profile(actor, actor.userId)).toMatchObject({ player: { length: 31800 } })
+    expect(await game.profile(actor, actor.userId)).toMatchObject({ player: { length: 30900 } })
   })
 
   it('同一平台跨群共享数值，不同平台互不串号', async () => {
     await initialize()
     const otherGroup = { ...actor, channelId: 'group-b' }
-    expect(await game.play(otherGroup, actor, 'train')).toMatchObject({ kind: 'changed', player: { length: 3300 } })
-    expect(await game.profile(actor, actor.userId)).toMatchObject({ player: { length: 3300 } })
-    expect(await game.play({ ...actor, platform: 'telegram' }, actor, 'mine')).toMatchObject({ kind: 'initialized', player: { length: 1800 } })
+    expect(await game.play(otherGroup, actor, 'train')).toMatchObject({ kind: 'changed', player: { length: 2400 } })
+    expect(await game.profile(actor, actor.userId)).toMatchObject({ player: { length: 2400 } })
+    expect(await game.play({ ...actor, platform: 'telegram' }, actor, 'mine')).toMatchObject({ kind: 'initialized', player: { length: null, depth: -900 } })
     expect(await ctx.database.get('impart_players', {})).toHaveLength(2)
   })
 
@@ -127,11 +148,11 @@ describe('真实 SQLite 游戏事务', () => {
     expect(await game.play(actor, actor, 'train')).toEqual({ kind: 'closed' })
     expect(await game.profile(actor, actor.userId)).toEqual({ kind: 'closed' })
     expect(await game.ranking(actor, 'length')).toBeUndefined()
-    expect(await game.profile({ ...actor, channelId: 'group-b' }, actor.userId)).toMatchObject({ player: { length: 1800 } })
+    expect(await game.profile({ ...actor, channelId: 'group-b' }, actor.userId)).toMatchObject({ player: { length: 900 } })
     expect(await game.stats()).toMatchObject({ players: 1, groups: 2, openGroups: 1 })
     await game.party(actor, true)
     await game.party(actor, true)
-    expect(await game.profile(actor, actor.userId)).toMatchObject({ player: { length: 1800, lastActionAt: 100_000 } })
+    expect(await game.profile(actor, actor.userId)).toMatchObject({ player: { length: 900, lastActionAt: 100_000 } })
   })
 
   it('新群默认关闭时不初始化，管理员仍能显式开启', async () => {
@@ -142,19 +163,23 @@ describe('真实 SQLite 游戏事务', () => {
     expect(await game.play(actor, actor, 'mine')).toMatchObject({ kind: 'initialized' })
   })
 
-  it('榜单排序相反、同值稳定，只包含所选群的历史参与者', async () => {
+  it('长度榜与深度榜各自只含已初始化玩家，只包含所选群的历史参与者', async () => {
     await initialize()
     await game.play(actor, bob, 'train')
     await ctx.database.set('impart_players', { userId: 'bob' }, { length: -2500 })
     await game.play({ ...actor, channelId: 'group-b', userId: 'carol', name: '丙' }, { userId: 'carol', name: '丙' }, 'train')
+    await game.play({ ...actor, userId: 'dave', name: '丁' }, { userId: 'dave', name: '丁' }, 'mine')
+    expect((await game.ranking(actor, 'mining'))?.players.map((player) => player.userId)).toEqual(['dave'])
+    await ctx.database.set('impart_players', { userId: 'alice' }, { depth: -100 })
+    await ctx.database.set('impart_players', { userId: 'bob' }, { depth: -3000 })
     expect((await game.ranking(actor, 'length'))?.players.map((player) => player.userId)).toEqual(['alice', 'bob'])
-    expect((await game.ranking(actor, 'mining'))?.players.map((player) => player.userId)).toEqual(['bob', 'alice'])
+    expect((await game.ranking(actor, 'mining'))?.players.map((player) => player.userId)).toEqual(['bob', 'dave', 'alice'])
     expect((await game.ranking({ ...actor, channelId: 'empty' }, 'length'))?.players).toEqual([])
     const stats = await game.stats()
-    expect(stats).toMatchObject({ players: 3, groups: 3, openGroups: 3, hidden: 0 })
-    expect(stats.ranked.map((group) => [group.channelId, group.players])).toEqual([['group-a', 2], ['group-b', 1]])
+    expect(stats).toMatchObject({ players: 4, groups: 3, openGroups: 3, hidden: 0 })
+    expect(stats.ranked.map((group) => [group.channelId, group.players])).toEqual([['group-a', 3], ['group-b', 1]])
     expect(stats.ranked[0]!.entries).toEqual([
-      { rank: 1, userId: 'alice', name: '甲', length: 1800 },
+      { rank: 1, userId: 'alice', name: '甲', length: 900 },
       { rank: 2, userId: 'bob', name: '乙', length: -2500 }
     ])
   })

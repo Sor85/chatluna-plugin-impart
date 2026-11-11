@@ -18,6 +18,8 @@ export class Game {
     private now: () => number = Date.now
   ) {
     if (config.rates.some((band) => band.min >= band.max)) throw new Error('成功率区间下限必须小于上限。')
+    if (config.initialLengthMin > config.initialLengthMax) throw new Error('初始长度下限不能大于上限。')
+    if (config.initialDepthMin > config.initialDepthMax) throw new Error('初始深度下限不能大于上限。')
   }
 
   private transact<T>(run: (tx: Database) => Promise<T>): Promise<T> {
@@ -48,36 +50,40 @@ export class Game {
       const group = await this.group(tx, actor)
       if (!group.enabled) return { kind: 'closed' }
       const now = this.now()
+      const field = mode === 'train' ? 'length' : 'depth'
       const targetKey = JSON.stringify([actor.platform, target.userId])
       const actorKey = JSON.stringify([actor.platform, actor.userId])
       const [targetPlayer] = await tx.get('impart_players', { id: targetKey })
       const [actorPlayer] = targetKey === actorKey ? [targetPlayer] : await tx.get('impart_players', { id: actorKey })
-      if (!targetPlayer || !actorPlayer) {
-        const identity = !targetPlayer ? target : actor
-        const player = await tx.create('impart_players', {
-          id: !targetPlayer ? targetKey : actorKey,
-          platform: actor.platform,
-          userId: identity.userId,
-          name: displayName(identity.name, identity.userId),
-          length: Math.round(varied(this.config.initialLength, this.config.initialVariance, this.random) * 100),
-          growthFactor: this.random(),
-          lastActionAt: now
-        })
-        await this.join(tx, group.id, player.id)
-        return { kind: 'initialized', player }
-      }
-      for (const player of [actorPlayer, targetPlayer]) {
+      const cooldown = (player: Player): PlayResult | undefined => {
         const remaining = player.lastActionAt + this.config.cooldownSeconds * 1000 - now
         if (remaining > 0) return { kind: 'cooldown', userId: player.userId, seconds: Math.ceil(remaining / 1000) }
       }
-      const { success, delta } = change(targetPlayer.length, targetPlayer.growthFactor, mode, this.config, this.random)
-      const player: Player = {
-        ...targetPlayer,
-        name: displayName(target.name, target.userId),
-        length: targetPlayer.length + delta,
-        lastActionAt: now
+      for (const [id, existing, identity] of [[targetKey, targetPlayer, target], [actorKey, actorPlayer, actor]] as const) {
+        if (existing?.[field] != null) continue
+        const waiting = existing && cooldown(existing)
+        if (waiting) return waiting
+        const [min, max] = mode === 'train'
+          ? [this.config.initialLengthMin, this.config.initialLengthMax]
+          : [this.config.initialDepthMin, this.config.initialDepthMax]
+        const initial = Math.round((min + this.random() * (max - min)) * 100)
+        const update = { name: displayName(identity.name, identity.userId), lastActionAt: now, ...(mode === 'train' ? { length: initial } : { depth: initial }) }
+        const player = existing
+          ? { ...existing, ...update }
+          : await tx.create('impart_players', { id, platform: actor.platform, userId: identity.userId, length: null, depth: null, growthFactor: this.random(), ...update })
+        if (existing) await tx.set('impart_players', { id }, update)
+        await this.join(tx, group.id, id)
+        return { kind: 'initialized', player, mode }
       }
-      await tx.set('impart_players', { id: targetKey }, { name: player.name, length: player.length, lastActionAt: now })
+      for (const player of [actorPlayer!, targetPlayer!]) {
+        const waiting = cooldown(player)
+        if (waiting) return waiting
+      }
+      const current = targetPlayer![field]!
+      const { success, delta } = change(current, targetPlayer!.growthFactor, mode, this.config, this.random)
+      const update = { name: displayName(target.name, target.userId), lastActionAt: now, ...(mode === 'train' ? { length: current + delta } : { depth: current + delta }) }
+      const player: Player = { ...targetPlayer!, ...update }
+      await tx.set('impart_players', { id: targetKey }, update)
       if (actorKey !== targetKey) {
         await tx.set('impart_players', { id: actorKey }, { name: displayName(actor.name, actor.userId), lastActionAt: now })
       }
@@ -108,8 +114,9 @@ export class Game {
     const members = this.config.allChannels ? undefined : await tx.get('impart_memberships', { groupId: group.id }, ['playerId'])
     const players = await tx.get('impart_players', {
       platform: group.platform,
+      ...(order === 'length' ? { length: { $exists: true } } : { depth: { $exists: true } }),
       ...(members ? { id: members.map((member) => member.playerId) } : {})
-    }, { sort: { length: order === 'length' ? 'desc' : 'asc', id: 'asc' }, limit: this.config.rankingLimit })
+    }, { sort: { ...(order === 'length' ? { length: 'desc' } : { depth: 'asc' }), id: 'asc' }, limit: this.config.rankingLimit })
     return { group, order, players, allChannels: this.config.allChannels }
   }
 
@@ -134,9 +141,9 @@ export class Game {
     const shown = active.slice(0, DASHBOARD_GROUPS)
     const ranked = await Promise.all(shown.map(async (group): Promise<GroupStats> => {
       const members = await this.database.get('impart_memberships', { groupId: group.id }, ['playerId'])
-      const count = sizes.get(group.id)!
-      const query = { id: members.map((member) => member.playerId) }
-      const [longest, shortest] = await Promise.all([
+      const query = { id: members.map((member) => member.playerId), length: { $exists: true } }
+      const [count, longest, shortest] = await Promise.all([
+        this.database.select('impart_players', query).execute((row) => $.count(row.id)),
         this.database.get('impart_players', query, { sort: { length: 'desc', id: 'asc' }, limit: DASHBOARD_PLAYERS }),
         this.database.get('impart_players', query, { sort: { length: 'asc', id: 'desc' }, limit: DASHBOARD_PLAYERS })
       ])
@@ -144,8 +151,8 @@ export class Game {
         ...longest.map((player, index) => ({ player, rank: index + 1 })),
         ...shortest.reverse().map((player, index) => ({ player, rank: count - shortest.length + index + 1 }))
       ].filter(({ rank }, index, all) => all.findIndex((other) => other.rank === rank) === index)
-        .map(({ player: { userId, name, length }, rank }) => ({ rank, userId, name, length }))
-      return { ...group, players: count, entries }
+        .map(({ player: { userId, name, length }, rank }) => ({ rank, userId, name, length: length! }))
+      return { ...group, players: sizes.get(group.id)!, entries }
     }))
     return { players, groups: groups.length, openGroups: groups.filter((group) => group.enabled).length, ranked, hidden: active.length - shown.length }
   }

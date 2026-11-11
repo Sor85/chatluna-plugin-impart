@@ -42,7 +42,7 @@ export function registerCommands(ctx: Context, game: Game, signal: AbortSignal, 
     }
   }
   ctx.command('impart', '打胶与挖矿群聊游戏', { owner, authority: 1 }).alias('银趴').action(() =>
-    '打胶（开导） [@成员]：增长玩法\n挖矿 [@成员]：反向玩法\n看看牛牛 [@成员]：查看长度与系数\n牛牛排行榜 / 挖矿排行榜：查看排名\n开始银趴 / 结束银趴：管理员设置本群开关\n首次参与仅初始化，长度跨群共享，打胶与挖矿共用冷却。'
+    '打胶（开导） [@成员]：增加长度\n挖矿 [@成员]：增加深度\n看看牛牛 [@成员]：查看长度、深度与系数\n牛牛排行榜 / 挖矿排行榜：查看排名\n开始银趴 / 结束银趴：管理员设置本群开关\n首次打胶初始化长度，首次挖矿初始化深度；长度与深度相互独立、跨群共享，打胶与挖矿共用冷却。'
   )
   const play = (session: Session | undefined, raw: string | undefined, mode: Mode) => safe(async () => {
     const actor = actorOf(session)
@@ -53,15 +53,15 @@ export function registerCommands(ctx: Context, game: Game, signal: AbortSignal, 
     refresh()
     if (result.kind === 'closed') return closed
     if (result.kind === 'cooldown') return h.escape(`${result.userId === actor.userId ? '当前用户' : '目标用户'}仍在冷却，剩余 ${result.seconds} 秒。`)
-    if (result.kind === 'initialized') return h.escape(`${result.player.name} 已初始化，长度 ${formatLength(result.player.length)} cm，生长系数 ${result.player.growthFactor.toFixed(2)}。`)
-    const label = mode === 'train' ? '打胶' : '挖矿'
-    return h.escape(`${result.player.name} ${label}${result.success ? '成功' : '失败'}，长度 ${result.delta > 0 ? '+' : ''}${formatLength(result.delta)} cm，当前 ${formatLength(result.player.length)} cm。`)
+    const [action, label, value] = mode === 'train' ? ['打胶', '长度', result.player.length!] : ['挖矿', '深度', result.player.depth!]
+    if (result.kind === 'initialized') return h.escape(`${result.player.name} 已初始化${label} ${formatLength(value)} cm，生长系数 ${result.player.growthFactor.toFixed(2)}。`)
+    return h.escape(`${result.player.name} ${action}${result.success ? '成功' : '失败'}，${label} ${result.delta > 0 ? '+' : ''}${formatLength(result.delta)} cm，当前 ${formatLength(value)} cm。`)
   })
   ctx.command('impart.train [target:user]', '打胶，增加长度', { owner, authority: 1 }).alias('打胶', '开导')
     .action(({ session }, target) => play(session, target, 'train'))
-  ctx.command('impart.mine [target:user]', '挖矿，减少长度', { owner, authority: 1 }).alias('挖矿')
+  ctx.command('impart.mine [target:user]', '挖矿，增加深度', { owner, authority: 1 }).alias('挖矿')
     .action(({ session }, target) => play(session, target, 'mine'))
-  ctx.command('impart.profile [target:user]', '查看长度和生长系数', { owner, authority: 1 }).alias('看看牛牛')
+  ctx.command('impart.profile [target:user]', '查看长度、深度和生长系数', { owner, authority: 1 }).alias('看看牛牛')
     .action(({ session }, raw) => safe(async () => {
       const actor = actorOf(session)
       if (!session) return ''
@@ -70,7 +70,8 @@ export function registerCommands(ctx: Context, game: Game, signal: AbortSignal, 
       refresh()
       if (result.kind === 'closed') return closed
       if (!result.player) return '该用户尚未参与。首次使用“打胶”或“挖矿”时初始化。'
-      return h.escape(`${result.player.name}\n长度：${formatLength(result.player.length)} cm\n生长系数：${result.player.growthFactor.toFixed(2)}`)
+      const show = (value: number | null) => value === null ? '未初始化' : `${formatLength(value)} cm`
+      return h.escape(`${result.player.name}\n长度：${show(result.player.length)}\n深度：${show(result.player.depth)}\n生长系数：${result.player.growthFactor.toFixed(2)}`)
     }))
   const rank = (session: Session | undefined, order: RankingOrder) => safe(async () => {
     const ranking = await game.ranking(actorOf(session), order)
@@ -90,7 +91,7 @@ export function registerCommands(ctx: Context, game: Game, signal: AbortSignal, 
   })
   ctx.command('impart.rank', '查看长度降序排行', { owner, authority: 1 }).alias('牛牛排行榜')
     .action(({ session }) => rank(session, 'length'))
-  ctx.command('impart.mining-rank', '查看长度升序排行', { owner, authority: 1 }).alias('挖矿排行榜', '深度排行榜')
+  ctx.command('impart.mining-rank', '查看深度升序排行', { owner, authority: 1 }).alias('挖矿排行榜', '深度排行榜')
     .action(({ session }) => rank(session, 'mining'))
   for (const [name, alias, enabled] of [
     ['start', '开始银趴', true], ['end', '结束银趴', false]

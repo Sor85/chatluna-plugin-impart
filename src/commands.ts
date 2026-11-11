@@ -8,17 +8,7 @@ import { createRankingRenderer, rankingText } from './render'
 import { displayName, formatLength, targetId } from './utils'
 
 const closed = '本群银趴已结束，游戏功能已暂停。管理员可使用“开始银趴”恢复。'
-
-function actorOf(session: Session | undefined): Actor {
-  if (!session?.userId || !session.channelId || session.isDirect || !session.guildId) throw new Error('此功能仅支持群聊。')
-  return {
-    platform: session.platform,
-    channelId: session.channelId,
-    groupName: session.event.channel?.name || session.event.guild?.name || session.channelId,
-    userId: session.userId,
-    name: displayName(session.username, session.userId)
-  }
-}
+const GROUP_NAME_TTL = 3600_000
 
 async function targetOf(session: Session, actor: Actor, raw: string | undefined): Promise<Target> {
   const userId = targetId(raw, actor.platform) ?? actor.userId
@@ -29,6 +19,29 @@ async function targetOf(session: Session, actor: Actor, raw: string | undefined)
 }
 
 export function registerCommands(ctx: Context, game: Game, signal: AbortSignal, refresh: () => void) {
+  // OneBot 等平台的消息事件不带群名，按群查询一次并缓存，避免每条指令都调用平台接口。
+  const groupNames = new Map<string, { name: string; at: number }>()
+  const groupName = async (session: Session) => {
+    const known = session.event.channel?.name || session.event.guild?.name
+    if (known) return known
+    const key = JSON.stringify([session.platform, session.guildId])
+    const cached = groupNames.get(key)
+    if (cached && Date.now() - cached.at < GROUP_NAME_TTL) return cached.name
+    const fetched = await session.bot.getGuild(session.guildId!).then((guild) => guild.name, () => undefined)
+    const name = fetched || cached?.name || session.channelId!
+    groupNames.set(key, { name, at: Date.now() })
+    return name
+  }
+  const actorOf = async (session: Session | undefined): Promise<Actor> => {
+    if (!session?.userId || !session.channelId || session.isDirect || !session.guildId) throw new Error('此功能仅支持群聊。')
+    return {
+      platform: session.platform,
+      channelId: session.channelId,
+      groupName: await groupName(session),
+      userId: session.userId,
+      name: displayName(session.username, session.userId)
+    }
+  }
   const render = createRankingRenderer(signal)
   const owner = 'chatluna-plugin-impart'
   const safe = async (run: () => Promise<string>) => {
@@ -45,7 +58,7 @@ export function registerCommands(ctx: Context, game: Game, signal: AbortSignal, 
     '打胶（开导） [@成员]：增加长度\n挖矿 [@成员]：增加深度\n看看牛牛 [@成员]：查看长度、深度与系数\n牛牛排行榜 / 挖矿排行榜：查看排名\n开始银趴 / 结束银趴：管理员设置本群开关\n首次打胶初始化长度，首次挖矿初始化深度；长度与深度相互独立、跨群共享，打胶与挖矿共用冷却。'
   )
   const play = (session: Session | undefined, raw: string | undefined, mode: Mode) => safe(async () => {
-    const actor = actorOf(session)
+    const actor = await actorOf(session)
     if (!session) return ''
     if (raw !== undefined && targetId(raw, actor.platform) === actor.userId) return '操作自己时不需要 @。'
     const target = await targetOf(session, actor, raw)
@@ -63,7 +76,7 @@ export function registerCommands(ctx: Context, game: Game, signal: AbortSignal, 
     .action(({ session }, target) => play(session, target, 'mine'))
   ctx.command('impart.profile [target:user]', '查看长度、深度和生长系数', { owner, authority: 1 }).alias('看看牛牛')
     .action(({ session }, raw) => safe(async () => {
-      const actor = actorOf(session)
+      const actor = await actorOf(session)
       if (!session) return ''
       const target = await targetOf(session, actor, raw)
       const result = await game.profile(actor, target.userId)
@@ -74,7 +87,7 @@ export function registerCommands(ctx: Context, game: Game, signal: AbortSignal, 
       return h.escape(`${result.player.name}\n长度：${show(result.player.length)}\n深度：${show(result.player.depth)}\n生长系数：${result.player.growthFactor.toFixed(2)}`)
     }))
   const rank = (session: Session | undefined, order: RankingOrder) => safe(async () => {
-    const ranking = await game.ranking(actorOf(session), order)
+    const ranking = await game.ranking(await actorOf(session), order)
     refresh()
     if (!ranking) return closed
     if (!ranking.players.length) return '当前范围暂无玩家记录。首次使用“打胶”或“挖矿”时初始化。'
@@ -98,7 +111,7 @@ export function registerCommands(ctx: Context, game: Game, signal: AbortSignal, 
   ] satisfies [string, string, boolean][]) {
     ctx.command(`impart.${name}`, alias, { owner, authority: 3 }).alias(alias)
       .action(({ session }) => safe(async () => {
-        const actor = actorOf(session)
+        const actor = await actorOf(session)
         if (!session || !await ctx.permissions.test('authority:3', session)) return '此操作需要管理员权限（权限等级 3）。'
         await game.party(actor, enabled)
         refresh()

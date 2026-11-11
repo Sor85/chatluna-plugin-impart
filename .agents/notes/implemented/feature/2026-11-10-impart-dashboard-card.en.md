@@ -22,3 +22,7 @@ The user asked to remove the sidebar "Party" page (`/impart`), inject the plugin
 ## Consequences
 
 The WebUI no longer shows full rankings or toggles groups; full rankings are available through chat commands. Without the dashboard plugin the card is not shown, though the state is still registered.
+
+## Group name backfill (2026-11-11)
+
+OneBot message events carry no group name, so some groups were stored with only their ID. When the event lacks a name, the plugin now queries `bot.getGuild` and caches the result for an hour; any command that obtains a real name updates the record, and the ID fallback never overwrites a stored name. Groups currently showing only an ID update the next time someone uses a command there.

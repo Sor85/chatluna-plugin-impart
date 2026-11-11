@@ -30,15 +30,13 @@ export class Game {
 
   private async group(tx: Database, actor: Actor): Promise<Group> {
     const id = JSON.stringify([actor.platform, actor.channelId])
+    const name = displayName(actor.groupName, actor.channelId)
     const [group] = await tx.get('impart_groups', { id })
-    if (group) return group
-    return tx.create('impart_groups', {
-      id,
-      platform: actor.platform,
-      channelId: actor.channelId,
-      name: displayName(actor.groupName, actor.channelId),
-      enabled: this.config.defaultEnabled
-    })
+    if (!group) return tx.create('impart_groups', { id, platform: actor.platform, channelId: actor.channelId, name, enabled: this.config.defaultEnabled })
+    // 群号只是取不到群名时的回退，不覆盖已记录的群名。
+    if (name === actor.channelId || name === group.name) return group
+    await tx.set('impart_groups', { id }, { name })
+    return { ...group, name }
   }
 
   private async join(tx: Database, groupId: string, playerId: string) {
@@ -105,8 +103,8 @@ export class Game {
   party(actor: Actor, enabled: boolean): Promise<Group> {
     return this.transact(async (tx) => {
       const group = await this.group(tx, actor)
-      await tx.set('impart_groups', { id: group.id }, { enabled, name: displayName(actor.groupName, actor.channelId) })
-      return { ...group, enabled, name: displayName(actor.groupName, actor.channelId) }
+      await tx.set('impart_groups', { id: group.id }, { enabled })
+      return { ...group, enabled }
     })
   }
 

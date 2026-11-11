@@ -155,6 +155,17 @@ describe('真实 SQLite 游戏事务', () => {
     expect(await game.profile(actor, actor.userId)).toMatchObject({ player: { length: 900, lastActionAt: 100_000 } })
   })
 
+  it('取到群名时更新记录，群号回退不覆盖已有群名', async () => {
+    const unnamed = { ...actor, groupName: actor.channelId }
+    await game.profile(unnamed, actor.userId)
+    expect(await ctx.database.get('impart_groups', {})).toMatchObject([{ name: 'group-a' }])
+    await game.profile(actor, actor.userId)
+    expect(await ctx.database.get('impart_groups', {})).toMatchObject([{ name: '测试群 A' }])
+    await game.party(unnamed, false)
+    await game.play(unnamed, actor, 'train')
+    expect(await ctx.database.get('impart_groups', {})).toMatchObject([{ name: '测试群 A', enabled: false }])
+  })
+
   it('新群默认关闭时不初始化，管理员仍能显式开启', async () => {
     game = new Game(ctx.database, { ...config, defaultEnabled: false }, random, () => now)
     expect(await game.play(actor, actor, 'mine')).toEqual({ kind: 'closed' })

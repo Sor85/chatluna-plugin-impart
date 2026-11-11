@@ -1,6 +1,6 @@
 {
   "name": "chatluna-plugin-impart",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "ChatLuna V2 群聊数值游戏，支持打胶、挖矿、排行榜与银趴开关，使用 Takumi 渲染图片",
   "type": "module",
   "license": "MIT",

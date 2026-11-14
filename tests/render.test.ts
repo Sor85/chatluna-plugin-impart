@@ -6,7 +6,7 @@ const ranking: Ranking = {
   group: { id: 'test', platform: 'onebot', channelId: 'test', name: '图片测试群', enabled: true },
   allChannels: false,
   order: 'mining',
-  players: [{ id: 'a', platform: 'onebot', userId: '123', name: '测试玩家 <img src="http://127.0.0.1/secret"/>', length: 100, depth: -2345, growthFactor: 0.5, lastActionAt: 0 }]
+  players: [{ id: 'a', platform: 'onebot', userId: '123', name: '测试玩家 <img src="http://127.0.0.1/secret"/>', length: 100, depth: -2345, growthFactor: 0.5, depthFactor: 0.25, lastActionAt: 0 }]
 }
 
 it('Takumi 实际输出 PNG，尺寸正确，中文字库离线可用', async () => {

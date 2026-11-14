@@ -1,11 +1,15 @@
 title: 银趴
-description: 各群按长度排列，显示最长与最短各 5 名；长度及冷却在同一平台跨群共享。
-players: 玩家
+description: 各群分别按长度（打胶）与深度（挖矿）排列，各显示首尾 5 名；数值在同一平台跨群共享，两种玩法共用冷却。
+trainers: 打胶玩家
+miners: 挖矿玩家
 groups: 群组
 openGroups: 进行中
 enabled: 进行中
 disabled: 已暂停
+length: 打胶 · 长度
+depth: 挖矿 · 深度
 groupPlayers: '{count} 名玩家'
 omitted: '中间省略 {count} 名'
 hidden: '另有 {count} 个群未显示，按参与人数显示前 6 个群。'
+boardEmpty: 暂无记录
 empty: 暂无玩家记录

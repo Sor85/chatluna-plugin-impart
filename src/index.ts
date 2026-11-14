@@ -17,6 +17,7 @@ export function apply(ctx: Context, config: Config) {
   const lifetime = new AbortController()
   ctx.effect(() => () => lifetime.abort())
   const game = new Game(ctx.database, config)
+  game.migrate().catch((error) => ctx.logger.warn('Data migration failed: %s', error))
   registerCommands(ctx, game, lifetime.signal, () => ctx.get('chatluna_webui')?.refresh('impart.stats'))
   ctx.inject(['chatluna_webui'], (ctx) => registerWebUI(ctx, game, config.dashboard))
 }

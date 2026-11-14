@@ -18,7 +18,9 @@ export function defineModels(ctx: Context) {
     name: 'string',
     length: { type: 'integer', nullable: true },
     depth: { type: 'integer', nullable: true },
-    growthFactor: 'double',
+    // growthFactor 为长度（打胶）系数，沿用旧列名以免 SQLite 重建表。
+    growthFactor: { type: 'double', nullable: true },
+    depthFactor: { type: 'double', nullable: true },
     lastActionAt: 'integer'
   }, { primary: 'id', unique: [['platform', 'userId']], indexes: [['platform', 'length'], ['platform', 'depth']] })
   ctx.model.extend('impart_groups', {
@@ -31,6 +33,8 @@ export function defineModels(ctx: Context) {
   ctx.model.extend('impart_memberships', {
     id: 'string',
     groupId: 'string',
-    playerId: 'string'
+    playerId: 'string',
+    length: { type: 'boolean', initial: false },
+    depth: { type: 'boolean', initial: false }
   }, { primary: 'id', unique: [['groupId', 'playerId']], indexes: [['groupId']] })
 }

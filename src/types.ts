@@ -10,7 +10,8 @@ export interface Player {
   name: string
   length: number | null
   depth: number | null
-  growthFactor: number
+  growthFactor: number | null
+  depthFactor: number | null
   lastActionAt: number
 }
 
@@ -26,6 +27,8 @@ export interface Membership {
   id: string
   groupId: string
   playerId: string
+  length: boolean
+  depth: boolean
 }
 
 export interface Actor {
@@ -58,7 +61,12 @@ export interface Entry {
   rank: number
   userId: string
   name: string
-  length: number
+  value: number
+}
+
+export interface Board {
+  players: number
+  entries: Entry[]
 }
 
 export interface GroupStats {
@@ -67,12 +75,13 @@ export interface GroupStats {
   channelId: string
   name: string
   enabled: boolean
-  players: number
-  entries: Entry[]
+  length: Board
+  depth: Board
 }
 
 export interface Stats {
-  players: number
+  trainers: number
+  miners: number
   groups: number
   openGroups: number
   ranked: GroupStats[]

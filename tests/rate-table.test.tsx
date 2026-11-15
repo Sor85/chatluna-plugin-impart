@@ -15,8 +15,6 @@ vi.mock('@chatluna/ui-client/client', () => ({
     return mocks.unsubscribe
   }
 }))
-vi.mock('../client/locales/zh.yml', () => ({ default: {} }))
-vi.mock('../client/locales/en.yml', () => ({ default: {} }))
 vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
 afterAll(() => vi.unstubAllGlobals())
 

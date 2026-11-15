@@ -13,3 +13,5 @@ omitted: '{count} players omitted'
 hidden: '{count} more groups not shown; the 6 groups with the most players are listed.'
 boardEmpty: No records
 empty: No player records
+topLength: Longest
+topDepth: Deepest

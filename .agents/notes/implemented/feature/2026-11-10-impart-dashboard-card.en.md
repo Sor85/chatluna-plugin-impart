@@ -26,3 +26,8 @@ The WebUI no longer shows full rankings or toggles groups; full rankings are ava
 ## Group name backfill (2026-11-11)
 
 OneBot message events carry no group name, so some groups were stored with only their ID. When the event lacks a name, the plugin now queries `bot.getGuild` and caches the result for an hour; any command that obtains a real name updates the record, and the ID fallback never overwrites a stored name. Groups currently showing only an ID update the next time someone uses a command there.
+
+
+## Widget board adaptation (2026-11-15)
+
+The V2 dashboard became an editable widget board and no longer renders the `dashboard.card` slot, so the card disappeared. The client now registers `impart.stats` through `ctx.slots.widget()` (order 70, default `lg`, sizes `sm`/`md`/`lg`/`xl`, icon `trophy`), with the title and gallery description translated via `ctx.locale.bind('impart')`. The board draws the frame and title; the component picks content by size: `sm` shows the four totals, `md` one row per group with the first place in length and depth, `lg` and `xl` the full top and bottom boards, with `xl` splitting into columns by container width. Board cells have fixed heights, so overflowing content scrolls inside the widget. The state and `Config.dashboard` mounting rules are unchanged.

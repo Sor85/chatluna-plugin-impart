@@ -13,3 +13,5 @@ omitted: '中间省略 {count} 名'
 hidden: '另有 {count} 个群未显示，按参与人数显示前 6 个群。'
 boardEmpty: 暂无记录
 empty: 暂无玩家记录
+topLength: 最长
+topDepth: 最深

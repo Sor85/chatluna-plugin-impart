@@ -10,7 +10,6 @@ import { Config } from '../src/config'
 
 const mocks = vi.hoisted(() => ({ listener: undefined as ((snapshot: { data: unknown }) => void) | undefined, unsubscribe: vi.fn() }))
 vi.mock('@chatluna/ui-client/client', () => ({
-  lazyPage: () => ({ component: () => null }),
   subscribeLive: (_key: string, _params: unknown, listener: (snapshot: { data: unknown }) => void) => {
     mocks.listener = listener
     return mocks.unsubscribe
@@ -110,15 +109,15 @@ describe('成功率区间表格', () => {
     expect(container.querySelector('[role="alert"]')?.textContent).toContain('第 2 项')
   })
 
-  it('客户端注册专属表格，仪表盘卡片跟随统计状态挂载与卸载', async () => {
+  it('客户端注册专属表格，仪表盘小组件跟随统计状态挂载与卸载', async () => {
     const ordinary = Schema.array(Schema.object({ min: Schema.number() })).role('table')
     const before = extensionOf(ordinary, [])?.component
     const cards: string[] = []
     const ctx = new Context()
     ctx.provide('locale')
     ctx.provide('slots')
-    ctx.set('locale', { register: () => () => {} })
-    ctx.set('slots', { register: (_name: string, options: { id: string }) => {
+    ctx.set('locale', { register: () => () => {}, bind: () => (key: string) => key })
+    ctx.set('slots', { widget: (options: { id: string }) => {
       cards.push(options.id)
       return () => cards.splice(cards.indexOf(options.id), 1)
     } })

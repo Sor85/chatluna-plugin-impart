@@ -23,14 +23,11 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.client.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "test": "vitest run"
   },
-  "dependencies": {
-    "@fontsource-variable/noto-sans-sc": "^5.2.8",
-    "@takumi-rs/core": "1.8.7"
-  },
   "peerDependencies": {
     "@chatluna/schema": ">=2.0.0-alpha.0",
     "@cordisjs/plugin-database": "4.2.0",
     "@satorijs/core": "~4.6.1",
+    "chatluna-plugin-takumi": "^0.0.1",
     "cordis": "^4.0.0-rc.12"
   },
   "devDependencies": {
@@ -46,6 +43,7 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "chatluna-plugin-takumi": "workspace:*",
     "cordis": "4.0.0-rc.12",
     "jsdom": "^31.0.0",
     "koishi": "npm:@koishijs/core@4.18.11",
@@ -57,6 +55,6 @@
   },
   "cordis": {
     "description": { "zh": "打胶、挖矿、排行榜与分群银趴开关", "en": "Group length game with training, mining, rankings and party controls" },
-    "service": { "required": ["model", "database", "koishi", "permissions"], "optional": ["chatluna_webui"] }
+    "service": { "required": ["model", "database", "koishi", "permissions"], "optional": ["chatluna_webui", "takumi"] }
   }
 }

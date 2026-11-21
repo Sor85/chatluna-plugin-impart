@@ -30,7 +30,7 @@ export const Config: Schema<Config> = Schema.intersect([
     cooldownSeconds: Schema.number().min(0).max(86400).step(1).default(5).label('操作冷却（秒）').description('打胶与挖矿共用冷却，跨群共享；帮助他人时双方均需冷却完成。')
   }).description('基础设置'),
   Schema.object({
-    imageMode: Schema.boolean().default(true).label('图片排行榜').description('使用 Takumi 与内置中文字体生成 PNG，渲染失败回退文字。'),
+    imageMode: Schema.boolean().default(true).label('图片排行榜').description('通过 Takumi 渲染服务（chatluna-plugin-takumi）生成 PNG；服务未启用或渲染失败时回退文字。'),
     rankingLimit: Schema.number().min(1).max(50).step(1).default(15).label('排行榜人数'),
     allChannels: Schema.boolean().default(false).label('跨群排行榜').description('开启后展示当前平台全部玩家；关闭时仅展示在本群参与过的玩家，不代表实时群成员名单。')
   }).description('排行榜'),

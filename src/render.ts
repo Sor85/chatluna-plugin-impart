@@ -1,7 +1,5 @@
-import type { Node, Renderer, TextNode } from '@takumi-rs/core'
-import { createRequire } from 'node:module'
-import { readdir, readFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import type Takumi from 'chatluna-plugin-takumi'
+import type { Node, TextNode } from 'chatluna-plugin-takumi'
 import type { Player, Ranking } from './types'
 import { formatLength } from './utils'
 
@@ -58,32 +56,8 @@ export function rankingNode(ranking: Ranking): Node {
   }
 }
 
-export function createRankingRenderer(signal: AbortSignal) {
-  let loading: Promise<{ renderer: Renderer; fontFamily: string }> | undefined
-  let active = 0
-  return async (ranking: Ranking) => {
-    signal.throwIfAborted()
-    if (active >= 2) throw new Error('Image renderer busy')
-    active++
-    try {
-      loading ??= (async () => {
-        const { Renderer } = await import('@takumi-rs/core')
-        const require = createRequire(import.meta.url)
-        const folder = join(dirname(require.resolve('@fontsource-variable/noto-sans-sc/package.json')), 'files')
-        const files = (await readdir(folder)).filter((name) => name.endsWith('.woff2')).sort()
-        const fonts = await Promise.all(files.map(async (file, index) => ({ name: `ImpartSC${index}`, data: await readFile(join(folder, file)) })))
-        signal.throwIfAborted()
-        return { renderer: new Renderer({ fonts, loadDefaultFonts: true }), fontFamily: fonts.map((font) => font.name).join(',') }
-      })()
-      const { renderer, fontFamily } = await loading
-      signal.throwIfAborted()
-      const node = rankingNode(ranking)
-      node.style = { ...node.style, fontFamily }
-      return await renderer.render(node, {
-        width: 960, height: 310 + ranking.players.length * 76, format: 'png'
-      }, signal)
-    } finally {
-      active--
-    }
-  }
+export function renderRanking(takumi: Pick<Takumi, 'render' | 'fontFamily'>, ranking: Ranking, signal: AbortSignal) {
+  const node = rankingNode(ranking)
+  node.style = { ...node.style, fontFamily: takumi.fontFamily }
+  return takumi.render(node, { width: 960, height: 310 + ranking.players.length * 76, format: 'png', signal })
 }

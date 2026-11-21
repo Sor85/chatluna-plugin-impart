@@ -4,7 +4,8 @@ import { h } from '@satorijs/core'
 import type {} from '@chatluna/permission'
 import type { Game } from './game'
 import type { Actor, Mode, RankingOrder, Target } from './types'
-import { createRankingRenderer, rankingText } from './render'
+import type {} from 'chatluna-plugin-takumi'
+import { rankingText, renderRanking } from './render'
 import { displayName, formatLength, targetId } from './utils'
 
 const closed = '本群银趴已结束，游戏功能已暂停。管理员可使用“开始银趴”恢复。'
@@ -42,7 +43,6 @@ export function registerCommands(ctx: Context, game: Game, signal: AbortSignal, 
       name: displayName(session.username, session.userId)
     }
   }
-  const render = createRankingRenderer(signal)
   const owner = 'chatluna-plugin-impart'
   const safe = async (run: () => Promise<string>) => {
     try {
@@ -96,7 +96,9 @@ export function registerCommands(ctx: Context, game: Game, signal: AbortSignal, 
     if (!ranking.players.length) return '当前范围暂无玩家记录。首次使用“打胶”或“挖矿”时初始化。'
     if (!game.config.imageMode) return h.escape(rankingText(ranking))
     try {
-      const image = await render(ranking)
+      const takumi = ctx.get('takumi')
+      if (!takumi) throw new Error('Takumi rendering service is not enabled')
+      const image = await renderRanking(takumi, ranking, signal)
       signal.throwIfAborted()
       return String(h.image(image, 'image/png'))
     } catch (error) {

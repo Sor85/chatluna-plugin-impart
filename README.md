@@ -1,6 +1,6 @@
 # ChatLuna Impart
 
-ChatLuna V2 群聊数值游戏。支持打胶（长度）、挖矿（深度）、玩家排行与分群银趴开关，排行榜图片由 Takumi 离线渲染。
+ChatLuna V2 群聊数值游戏。支持打胶（长度）、挖矿（深度）、玩家排行与分群银趴开关，排行榜图片由 [Takumi 渲染服务](https://github.com/Sor85/chatluna-plugin-takumi) 离线生成。
 
 ## 指令
 
@@ -41,7 +41,7 @@ ChatLuna V2 群聊数值游戏。支持打胶（长度）、挖矿（深度）�
 
 数值规则、冷却、默认群状态、图片模式、排行榜人数和范围在宿主插件配置中管理。配置页默认展开基础设置与排行榜，数值规则、成功率区间和 WebUI 分组默认折叠，点击分组标题展开。排行榜默认前 15 人，最多 50 人；群榜统计该玩法的历史参与者，不是实时群成员名册。跨群榜仅包含当前平台玩家。
 
-图片使用内置 Noto Sans SC 中文字体，不需要浏览器或远程字体服务。渲染失败时明确提示并回退文字，不影响游戏数据。
+图片排行榜需要同时启用 `chatluna-plugin-takumi`，字体由该服务内置，不需要浏览器或远程字体服务。服务未启用或渲染失败时明确提示并回退文字，不影响游戏数据。
 
 ## 安装要求
 
@@ -52,4 +52,4 @@ ChatLuna V2 群聊数值游戏。支持打胶（长度）、挖矿（深度）�
 
 ## 许可与致谢
 
-基于 [shangxue 的 impart-pro](https://github.com/koishi-shangxue-plugins/koishi-shangxue-apps/tree/main/plugins/impart-pro) 的游戏规则重构。保留上游版权声明，按 [MIT](./LICENSE) 协议发布。内置字体遵循其依赖包附带的 SIL Open Font License。
+基于 [shangxue 的 impart-pro](https://github.com/koishi-shangxue-plugins/koishi-shangxue-apps/tree/main/plugins/impart-pro) 的游戏规则重构。保留上游版权声明，按 [MIT](./LICENSE) 协议发布。图片字体由 `chatluna-plugin-takumi` 提供，遵循其依赖包附带的 SIL Open Font License。

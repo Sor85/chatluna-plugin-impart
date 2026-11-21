@@ -96,9 +96,7 @@ export function registerCommands(ctx: Context, game: Game, signal: AbortSignal, 
     if (!ranking.players.length) return '当前范围暂无玩家记录。首次使用“打胶”或“挖矿”时初始化。'
     if (!game.config.imageMode) return h.escape(rankingText(ranking))
     try {
-      const takumi = ctx.get('takumi')
-      if (!takumi) throw new Error('Takumi rendering service is not enabled')
-      const image = await renderRanking(takumi, ranking, signal)
+      const image = await renderRanking(ctx.takumi, ranking, signal)
       signal.throwIfAborted()
       return String(h.image(image, 'image/png'))
     } catch (error) {

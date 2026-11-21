@@ -8,14 +8,14 @@ This plugin embedded a Takumi Renderer and the Noto Sans SC fonts. Enabled along
 
 ## Decision
 
-- `takumi` is an optional service: `package.json` declares `chatluna-plugin-takumi` as a peer dependency, `cordis.service.optional` lists `takumi`, and rendering reads it with `ctx.get('takumi')`. The `@takumi-rs/core` and font dependencies are gone.
+- `takumi` is a required service: `package.json` declares `chatluna-plugin-takumi` as a peer dependency, `cordis.service.required` and `inject` list `takumi`, and rendering uses `ctx.takumi` directly. The `@takumi-rs/core` and font dependencies are gone.
 - `renderRanking` (`src/render.ts`) only builds the node tree and applies the service's `fontFamily`; sizing is unchanged. The service queues concurrent renders instead of failing when busy.
-- A missing service and a failed render share the same text fallback.
+- A failed render still falls back to the text ranking.
 
 ## Alternatives considered
 
-- A required service: without takumi the whole game would stop, though the ranking image is an optional output; rejected.
+- An optional service (`cordis.service.optional` plus `ctx.get` at call time): the first version. The host WebUI's service dependency panel reads only `inject`, so optional services are not listed and users cannot tell takumi is needed. Cordis 4 treats every `inject` entry as required: `{ takumi: { required: false } }` shows as optional in the panel, yet the plugin does not start without the service. Switched to required.
 
 ## Consequences
 
-- Without takumi, rankings are sent as text and the game keeps working.
+- Without takumi the plugin does not start. takumi loads fonts on demand and takes about 13 MB while idle; before the migration the plugin bundled Takumi and always had images, so behaviour matches.

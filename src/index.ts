@@ -10,7 +10,7 @@ import { registerWebUI } from './webui'
 
 export const name = 'chatluna-impart'
 export { Config }
-export const inject = ['model', 'database', 'koishi', 'permissions']
+export const inject = ['model', 'database', 'koishi', 'permissions', 'takumi']
 
 export function apply(ctx: Context, config: Config) {
   defineModels(ctx)
